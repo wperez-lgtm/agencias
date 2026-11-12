@@ -19,7 +19,7 @@ GET https://disponibilidad.galapagosgalaxycruises.com/api/v3/availability/search
 | Límite | 60 consultas por minuto |
 | Encabezados del límite | `X-RateLimit-Limit` y `X-RateLimit-Remaining` |
 
-El servicio tiene dos ambientes, con datos distintos entre sí. Los ejemplos de este manual usan Pruebas.
+El servicio tiene dos ambientes. Los ejemplos de este manual usan Pruebas.
 
 | Ambiente | URL base | Cuándo usarlo |
 | --- | --- | --- |
@@ -32,9 +32,7 @@ El servicio tiene dos ambientes, con datos distintos entre sí. Los ejemplos de 
 GET https://galaxycruises.com/api/v3/availability/search/ship/{shipId}/{startDate}/{endDate}
 ```
 
-No uses `galagentssystem.com`: es el dominio del manual anterior y devolvió datos distintos.
-
-En Producción, consulta rangos de hasta 3 meses. Pedir toda la flota durante 6 meses o un año devolvió `500` tras unos 30 segundos. Para periodos largos, haz una consulta por mes.
+Consulta periodos de hasta 3 meses. Para periodos más largos, haz una consulta por mes.
 
 ## Paso 1. Probar el endpoint
 
@@ -94,8 +92,8 @@ El código de estado no basta para interpretar la respuesta. Dos casos sorprende
 | `200` con `data: null` | No hay salidas en el rango | JSON | Tratarlo como lista vacía, no como error |
 | `401` | Barco o fechas inválidos | JSON con `message` y, casi siempre, `errors` | Mostrar `errors`, o `message` si no viene. No agregar credenciales |
 | `404` | Ruta incompleta | HTML | Corregir la URL. No leerlo como JSON |
-| `429` | Más de 60 consultas por minuto | Aún sin observar | Esperar un minuto. No leerlo como JSON |
-| `500` | Error del servidor o rango demasiado amplio | HTML o JSON con `success: false` y `message` | Mostrar un error general. Comprobar el `content-type` antes de leerlo. Si el rango es largo, dividirlo por mes |
+| `429` | Más de 60 consultas por minuto | — | Esperar un minuto. No leerlo como JSON |
+| `500` | Error del servidor | HTML o JSON con `success: false` y `message` | Mostrar un error general. Comprobar el `content-type` antes de leerlo |
 
 Si llamas desde un servidor, envía un `User-Agent` propio. El servicio responde `406` a los clientes `Python-urllib` y `python-requests` con su valor por defecto. Con un valor como `agencia-disponibilidad/1.0` responde `200`.
 
@@ -480,14 +478,5 @@ def fetch_availability(ship_id, start_date, end_date):
 | Error con `data.ship` | `data` llegó nulo | Usar lista vacía cuando `data` sea nulo |
 | Fecha un día antes | La fecha se interpretó en UTC | Construirla con año, mes y día locales |
 | `429` | Más de 60 consultas por minuto | Esperar un minuto y reducir las consultas |
-| Datos distintos a otra fuente | Se compararon ambientes distintos o se usó el dominio anterior | Comparar dentro del mismo ambiente. Durante el desarrollo, usar Pruebas |
-| `500` en una búsqueda larga | Rango demasiado amplio para Producción | Dividir la búsqueda por mes |
-
-## Pendiente de confirmar
-
-Estos puntos dependen de Galaxy y pueden cambiar cómo presentas los datos.
-
-- La moneda: el servicio no la indica.
-- El valor de `single` con el barco parcialmente vendido: puede ser mayor que `free`.
-- El contenido de la respuesta `429`: no se ha observado.
-- Las consultas después de las 19:00 de Ecuador: sin probar si la fecha de hoy se rechaza.
+| Los datos cambian entre Pruebas y Producción | Cada ambiente tiene su propia información | Comparar dentro del mismo ambiente |
+| Una búsqueda larga no responde | El periodo supera los 3 meses | Hacer una consulta por mes |

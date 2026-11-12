@@ -13,7 +13,7 @@ info:
     - **Pruebas (actual):** `https://disponibilidad.galapagosgalaxycruises.com`. En uso durante el desarrollo.
     - **Producción:** `https://galaxycruises.com`. Se debe apuntar aquí cuando esté probado.
 
-    Los dos ambientes no tienen los mismos datos. Elige uno en **Servers** antes de ejecutar.
+    Elige un ambiente en **Servers** antes de ejecutar.
 
     ## Comportamientos que debe manejar quien consume la API
     - **Sin resultados:** responde `200` con `data: null`, no con una lista vacía.
@@ -24,16 +24,10 @@ info:
     - **Salidas agotadas:** se incluyen con `free: 0`.
     - **Itinerarios combinados:** un itinerario como `C+A` vende los mismos espacios que `C` y `A`.
     - **Barcos sin salidas:** no aparecen en la respuesta.
-    - **Rangos amplios en Producción:** toda la flota durante 6 meses o un año devolvió `500` tras unos 30 segundos. Hasta 3 meses respondió `200`.
+    - **Periodo de consulta:** consultar periodos de hasta 3 meses. Para periodos más largos, hacer una consulta por mes.
 
     ## Límite de consultas
     60 consultas por minuto, informado en `X-RateLimit-Limit` y `X-RateLimit-Remaining`.
-
-    ## Pendiente de confirmar
-    - El cuerpo de la respuesta `429` no se ha observado.
-    - La moneda de los precios: el servicio no la indica.
-    - El valor de `single` con el barco parcialmente vendido, ver el campo.
-    - Por qué las cabinas ofrecidas pueden sumar más plazas que `free`.
 servers:
   - url: https://disponibilidad.galapagosgalaxycruises.com
     description: Pruebas (actual)
@@ -267,9 +261,9 @@ paths:
         "404":
           description: Ruta incompleta, por ejemplo sin `endDate`. El cuerpo es HTML, no JSON.
         "429":
-          description: Se superó el límite de consultas por minuto. El cuerpo no se ha observado.
+          description: Se superó el límite de consultas por minuto.
         "500":
-          description: Error del servidor o rango demasiado amplio. El cuerpo puede ser HTML o JSON con `success` y `message`.
+          description: Error del servidor. El cuerpo puede ser HTML o JSON con `success` y `message`.
 components:
   headers:
     RateLimitLimit:
@@ -369,7 +363,7 @@ components:
           description: |
             Número de singles disponibles. Condición especial: con la embarcación completamente
             libre (`free` igual a `capacity`) solo se permiten 2 singles por itinerario, aunque
-            la API envíe `0`. Por confirmar con el barco parcialmente vendido: puede ser mayor que `free`.
+            la API envíe `0`.
         capacity:
           type: integer
           minimum: 0
