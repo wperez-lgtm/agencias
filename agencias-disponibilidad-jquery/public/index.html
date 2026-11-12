@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Disponibilidad de cruceros</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="brand/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/availability-page.css" />
+    <link rel="stylesheet" href="css/search-form.css" />
+    <link rel="stylesheet" href="css/departure-card.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__bar">
+        <img class="hero__logo" src="brand/logo-white.webp" alt="Galaxy Cruises" width="160" height="42" />
+        <span class="hero__partners">Portal de agencias</span>
+      </div>
+      <div class="hero__panel">
+        <h1><strong>Disponibilidad</strong> de la flota en tiempo real</h1>
+        <p>Salidas, espacios y tarifas <strong>para tus pasajeros</strong></p>
+      </div>
+    </header>
+
+    <main class="content">
+      <form id="search-form" class="search" novalidate>
+        <label class="field">
+          <span>Barco</span>
+          <select id="ship-name">
+            <option value="">Todos los barcos</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Desde</span>
+          <input id="start-date" type="date" />
+        </label>
+        <label class="field">
+          <span>Hasta</span>
+          <input id="end-date" type="date" />
+        </label>
+        <div class="field">
+          <span id="min-free-label">Espacios mínimos</span>
+          <div class="stepper">
+            <button id="min-free-less" type="button" aria-label="Menos espacios">−</button>
+            <input id="min-free" type="number" min="1" value="1" aria-labelledby="min-free-label" />
+            <button id="min-free-more" type="button" aria-label="Más espacios">+</button>
+          </div>
+        </div>
+        <button id="search-submit" class="search__submit" type="submit">Buscar salidas</button>
+        <p id="search-error" class="search__error" role="alert" hidden></p>
+      </form>
+
+      <div id="skeletons" class="skeletons" role="status" aria-label="Consultando disponibilidad" hidden>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+      <div id="feedback"></div>
+      <div id="results"></div>
+    </main>
+
+    <script src="vendor/jquery.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

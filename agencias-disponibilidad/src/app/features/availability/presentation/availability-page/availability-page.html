@@ -1,0 +1,84 @@
+<header class="hero">
+  <div class="hero__bar">
+    <img class="hero__logo" src="brand/logo-white.webp" alt="Galaxy Cruises" width="160" height="42" />
+    <span class="hero__partners">Portal de agencias</span>
+  </div>
+  <div class="hero__panel">
+    <h1><strong>Disponibilidad</strong> de la flota en tiempo real</h1>
+    <p>Salidas, espacios y tarifas <strong>para tus pasajeros</strong></p>
+  </div>
+</header>
+
+<main class="content">
+  <app-search-form
+    [shipNames]="shipNames()"
+    [selectedShip]="store.selectedShip()"
+    [loading]="store.loading()"
+    (searchRequested)="store.search($event)"
+    (shipSelected)="store.selectShip($event)"
+    (minFreeChanged)="store.setMinFree($event)"
+  />
+
+  @if (store.loading()) {
+    <div class="skeletons" role="status" aria-label="Consultando disponibilidad">
+      @for (row of skeletonRows; track row) {
+        <div class="skeleton"></div>
+      }
+    </div>
+  }
+
+  @if (store.error(); as message) {
+    <div class="notice notice--error" role="alert">
+      <h2>No pudimos completar la búsqueda</h2>
+      <p>{{ message }}</p>
+    </div>
+  }
+
+  @if (store.hasResults()) {
+    @let summary = store.summary();
+
+    @if (summary.departures === 0) {
+      <div class="notice">
+        <h2>Sin salidas para esta búsqueda</h2>
+        <p>Prueba con un rango de fechas más amplio, otro barco o menos espacios.</p>
+      </div>
+    } @else {
+      <dl class="stats" role="status">
+        <div><dt>Salidas</dt><dd>{{ summary.departures }}</dd></div>
+        <div><dt>Barcos</dt><dd>{{ summary.ships }}</dd></div>
+        <div><dt>Espacios libres</dt><dd>{{ summary.freeSpaces }}</dd></div>
+        <div><dt>Con promoción</dt><dd>{{ summary.promotions }}</dd></div>
+      </dl>
+
+      @if (summary.ships > 1) {
+        <nav class="fleet" aria-label="Ir a un barco">
+          @for (ship of store.visibleShips(); track ship.name; let index = $index) {
+            <button type="button" (click)="scrollToShip(index)">
+              {{ ship.name }} <span>{{ ship.itinerary.length }}</span>
+            </button>
+          }
+        </nav>
+      }
+
+      @for (ship of store.visibleShips(); track ship.name; let index = $index) {
+        <section class="ship" [id]="'ship-' + index">
+          <header class="ship__header">
+            <div>
+              <h2>{{ ship.name }}</h2>
+              <p>
+                {{ shipTypePresentation(ship.type).label }} · {{ ship.itinerary.length }}
+                {{ ship.itinerary.length | pluralize: 'salida disponible' : 'salidas disponibles' }}
+              </p>
+            </div>
+            <p class="ship__from">Desde {{ ship.fromPrice | price }}</p>
+          </header>
+          <div class="ship__list">
+            @for (itinerary of ship.itinerary; track $index) {
+              <app-departure-card [itinerary]="itinerary" [shipType]="ship.type" />
+            }
+          </div>
+        </section>
+      }
+    }
+  }
+</main>

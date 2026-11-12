@@ -1,0 +1,38 @@
+<form class="search" [formGroup]="form" (ngSubmit)="submit()">
+  <label class="field">
+    <span>Barco</span>
+    <select formControlName="shipName">
+      <option value="">Todos los barcos</option>
+      @for (name of shipNames(); track name) {
+        <option [value]="name">{{ name }}</option>
+      }
+    </select>
+  </label>
+  <label class="field">
+    <span>Desde</span>
+    <input type="date" formControlName="start" />
+  </label>
+  <label class="field">
+    <span>Hasta</span>
+    <input type="date" formControlName="end" />
+  </label>
+  <div class="field">
+    <span id="min-free-label">Espacios mínimos</span>
+    <div class="stepper">
+      <button type="button" aria-label="Menos espacios" (click)="changeMinFree(-1)">−</button>
+      <input type="number" min="1" formControlName="minFree" aria-labelledby="min-free-label" />
+      <button type="button" aria-label="Más espacios" (click)="changeMinFree(1)">+</button>
+    </div>
+  </div>
+  <button class="search__submit" type="submit" [disabled]="loading()">
+    {{ loading() ? 'Buscando…' : 'Buscar salidas' }}
+  </button>
+
+  @if (form.hasError('startInPast')) {
+    <p class="search__error" role="alert">La fecha de inicio no puede ser anterior a hoy.</p>
+  } @else if (form.hasError('endBeforeStart')) {
+    <p class="search__error" role="alert">La fecha final debe ser igual o posterior a la de inicio.</p>
+  } @else if (form.hasError('required') && form.touched) {
+    <p class="search__error" role="alert">Selecciona las dos fechas.</p>
+  }
+</form>

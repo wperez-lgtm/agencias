@@ -1,0 +1,219 @@
+:host {
+  display: block;
+}
+
+.hero {
+  padding: 14px 20px 116px;
+  color: #fff;
+  background:
+    linear-gradient(to bottom, rgb(0 0 0 / 0.75) 0, rgb(0 0 0 / 0) 96px),
+    url('/brand/hero.jpg') center 58% / cover no-repeat var(--ink);
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: var(--page);
+    margin: 0 auto;
+  }
+
+  &__logo {
+    width: 160px;
+    height: auto;
+  }
+
+  &__partners {
+    padding: 6px 14px;
+    font-weight: 700;
+    color: #000;
+    background: #fff;
+  }
+
+  &__panel {
+    max-width: 350px;
+    margin: 36px auto 0 max(0px, calc((100% - var(--page)) / 2));
+    padding: 16px;
+    background: rgb(0 37 84 / 0.55);
+    backdrop-filter: blur(6px);
+
+    h1 {
+      margin: 0;
+      padding-bottom: 14px;
+      font-size: 2.15rem;
+      font-weight: 300;
+      line-height: 1.2;
+      border-bottom: 1px solid #fff;
+
+      strong {
+        font-weight: 700;
+      }
+    }
+
+    p {
+      margin: 12px 0 0;
+      font-size: 1.1rem;
+      font-weight: 300;
+      line-height: 1.15;
+
+      strong {
+        display: block;
+        font-weight: 700;
+        color: var(--cyan);
+      }
+    }
+  }
+}
+
+.content {
+  max-width: var(--page);
+  margin: -72px auto 0;
+  padding: 0 20px 56px;
+  position: relative;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 26px 0 0;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  dt {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+}
+
+.fleet {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  margin: 18px -20px 0;
+  padding: 10px 20px;
+  overflow-x: auto;
+  background: var(--bg);
+
+  button {
+    flex: none;
+    padding: 7px 13px;
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--surface);
+    border: 0;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+
+    &:hover {
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  span {
+    margin-left: 3px;
+    font-weight: 700;
+    color: var(--sea-deep);
+  }
+}
+
+.ship {
+  margin-top: 30px;
+  scroll-margin-top: 66px;
+
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 24px;
+    margin-bottom: 12px;
+    padding: 14px 22px;
+    color: #fff;
+    background: var(--ink-soft);
+
+    h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 500;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      font-weight: 300;
+    }
+  }
+
+  &__header &__from {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  &__list {
+    display: grid;
+    gap: 12px;
+  }
+}
+
+.notice {
+  margin-top: 28px;
+  padding: 36px 24px;
+  text-align: center;
+  background: var(--surface);
+
+  h2 {
+    margin: 0 0 6px;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  &--error h2 {
+    color: var(--coral);
+  }
+}
+
+.skeletons {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.skeleton {
+  height: 168px;
+  background: linear-gradient(100deg, var(--tint) 30%, var(--tint-soft) 50%, var(--tint) 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -50% 0;
+  }
+}

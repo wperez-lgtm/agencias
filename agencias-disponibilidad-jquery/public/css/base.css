@@ -1,0 +1,45 @@
+:root {
+  color-scheme: light;
+  /* Colores tomados de galaxycruises.com. */
+  --ink: #002554;
+  --ink-soft: #0e3b68;
+  --ink-hover: #022547;
+  --sea-deep: #317782;
+  --sea: #009aa1;
+  --sea-light: #a4c8cb;
+  --cyan: #00ffff;
+  --sun: #ec8e00;
+  --coral: #af2d05;
+  --sky: #e7f6fd;
+  --bg: #f3f3f5;
+  --surface: #ffffff;
+  --text: #212529;
+  --muted: #4c6a8e;
+  --tint: #dfefef;
+  --tint-soft: #f8f9fa;
+  --line: #ccdbdd;
+  --font-display: 'Roboto', system-ui, sans-serif;
+  --font-body: 'Roboto', system-ui, sans-serif;
+  --page: 1200px;
+  --shadow-sm: 0 1px 2px rgb(0 37 84 / 0.06), 0 2px 8px rgb(0 37 84 / 0.05);
+  --shadow-md: 0 4px 10px rgb(0 37 84 / 0.08), 0 12px 28px rgb(0 37 84 / 0.09);
+  --shadow-lg: 0 8px 20px rgb(0 37 84 / 0.1), 0 24px 56px rgb(0 37 84 / 0.16);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sea);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}

@@ -1,0 +1,584 @@
+openapi: 3.1.0
+info:
+  title: API de Disponibilidad Galaxy Cruises
+  version: v3
+  description: |
+    Consulta en tiempo real la disponibilidad, los precios y las cabinas de la flota.
+    Solo expone disponibilidad de embarcaciones; el "day by day" no está en este servicio.
+
+    Este contrato describe el servicio tal como existe. Se construyó con el manual de
+    noviembre de 2026 y con respuestas reales del servicio.
+
+    ## Comportamientos que debe manejar quien consume la API
+    - **Sin resultados:** responde `200` con `data: null`, no con una lista vacía.
+    - **Parámetros inválidos:** responden `401`, aunque el servicio no pide autenticación.
+    - **Mensajes de validación:** llegan en inglés.
+    - **Salidas fuera del rango:** pueden incluirse salidas anteriores a `startDate`.
+    - **Orden:** las salidas de un barco no siempre vienen ordenadas por fecha.
+    - **Salidas agotadas:** se incluyen con `free: 0`.
+    - **Itinerarios combinados:** un itinerario como `C+A` vende los mismos espacios que `C` y `A`.
+    - **Barcos sin salidas:** no aparecen en la respuesta.
+
+    ## Límite de consultas
+    60 consultas por minuto, informado en `X-RateLimit-Limit` y `X-RateLimit-Remaining`.
+
+    ## Pendiente de confirmar
+    - El cuerpo de la respuesta `429` no se ha observado.
+    - La moneda de los precios: el servicio no la indica.
+    - El significado exacto de `single`, ver el campo.
+    - Por qué las cabinas ofrecidas pueden sumar más plazas que `free`.
+servers:
+  - url: https://disponibilidad.galapagosgalaxycruises.com
+    description: Producción
+tags:
+  - name: Disponibilidad
+    description: Consulta de salidas, espacios y precios.
+security: []
+paths:
+  /api/v3/availability/search/ship/{shipId}/{startDate}/{endDate}:
+    get:
+      tags:
+        - Disponibilidad
+      operationId: searchAvailabilityByShip
+      summary: Consultar disponibilidad por barco y fechas
+      description: Devuelve los barcos con salidas para el rango indicado. Es una operación de solo lectura.
+      parameters:
+        - name: shipId
+          in: path
+          required: true
+          description: |
+            Identificador del barco. Debe ser numérico.
+
+            | ID | Barco |
+            |---|---|
+            | 0 | Todos los barcos |
+            | 1 | M/Y Galaxy |
+            | 2 | M/C EcoGalaxy |
+            | 3 | M/C Alya |
+            | 4 | M/Y Bonita |
+            | 6 | M/Y Galaxy Daily (hoy responde `401`, "No existen barcos") |
+            | 7 | M/C Galaxy Sirius |
+            | 8 | M/Y Galaxy Diver II |
+            | 9 | M/Y Galaxy Orion |
+            | 10 | M/Y Galaxy Zibo |
+            | 11 | M/Y Galaxy Diver III |
+            | 12 | M/Y Galaxy Stella |
+            | 13 | M/Y Galaxy Skape |
+          schema:
+            type: integer
+            minimum: 0
+          example: 4
+        - name: startDate
+          in: path
+          required: true
+          description: Fecha inicial en formato `yyyy-MM-dd`. No puede ser anterior a hoy.
+          schema:
+            type: string
+            format: date
+          example: 2026-11-09
+        - name: endDate
+          in: path
+          required: true
+          description: Fecha final en formato `yyyy-MM-dd`. Debe ser igual o posterior a `startDate`.
+          schema:
+            type: string
+            format: date
+          example: 2026-12-09
+      responses:
+        "200":
+          description: Consulta procesada. `data` es nulo cuando no hay salidas para el rango.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/RateLimitLimit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/RateLimitRemaining"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponse"
+              examples:
+                crucero:
+                  summary: Crucero con promoción
+                  value:
+                    successful: true
+                    data:
+                      ship:
+                        - name: M/Y Bonita
+                          type: 1
+                          itinerary:
+                            - id: 2267
+                              name: C
+                              acronym: C
+                              date:
+                                start: 2026-12-02
+                                end: 2026-12-06
+                              island:
+                                start: GPS
+                                end: GPS
+                              guide:
+                                language: en
+                              free: 6
+                              hold: 0
+                              single: 0
+                              capacity: 16
+                              price: 2900
+                              promo:
+                                date: 2026-12-02
+                                amount: 2320
+                                observation: null
+                              package:
+                                normal: 4060
+                                save: 3715
+                                promo: 3164
+                              cabin:
+                                - id: 28
+                                  name: "1"
+                                  deck: Lower Deck
+                                  accom:
+                                    - id: 163
+                                      name: Single
+                                      share: false
+                                      space: 1
+                                      price: 4350
+                                      promo: 3480
+                                    - id: 165
+                                      name: Double Twin
+                                      share: false
+                                      space: 2
+                                      price: 2900
+                                      promo: 2320
+                tourDiario:
+                  summary: Tour diario (Skape)
+                  value:
+                    successful: true
+                    data:
+                      ship:
+                        - name: M/Y Galaxy Skape
+                          type: 5
+                          itinerary:
+                            - id: 6762
+                              name: Plazas
+                              acronym: PC/PS
+                              date:
+                                start: 2026-11-11
+                                end: 2026-11-11
+                              guide:
+                                language: en
+                              free: 1
+                              hold: 0
+                              single: 0
+                              capacity: 16
+                              price: 360
+                              promo:
+                                date: 2026-11-11
+                                amount: 180
+                                observation: null
+                              accom:
+                                id: 578
+                                name: Single
+                                space: 1
+                                price: 360
+                                promo: 180
+                              deck: Upper Deck
+                              package:
+                                normal: "1300.00"
+                                save: "1040.00"
+                                promo: "860.00"
+                              cabin:
+                                - id: 98
+                                  name: 1-VIP
+                                  deck: Upper Deck
+                                  space:
+                                    - id: 320
+                                      name: "1"
+                                    - id: 321
+                                      name: "2"
+                                    - id: 342
+                                      name: "3"
+                                  accom:
+                                    - id: 578
+                                      active: 1
+                                      delete: 0
+                                      name: Single
+                                      space: 1
+                                      share: true
+                                      price: 360
+                                      promo: null
+                sinSalidas:
+                  summary: Sin salidas para el rango
+                  value:
+                    successful: true
+                    data: null
+        "401":
+          description: |
+            Parámetros inválidos. El servicio usa este estado para errores de validación,
+            no para problemas de autenticación.
+          headers:
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/RateLimitLimit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/RateLimitRemaining"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+              examples:
+                barcoInvalido:
+                  summary: Barco inexistente
+                  value:
+                    message: Dato(s) invalido(s)
+                    errors:
+                      ship_id:
+                        - The selected ship id is invalid.
+                barcoSinRegistro:
+                  summary: Barco sin registro
+                  value:
+                    message: Dato(s) invalido(s) No existen barcos
+                fechaPasada:
+                  summary: Fecha de inicio pasada
+                  value:
+                    message: Dato(s) invalido(s)
+                    errors:
+                      start_date:
+                        - The start date must be a date after or equal to today.
+                rangoInvertido:
+                  summary: Fecha final anterior a la inicial
+                  value:
+                    message: Dato(s) invalido(s)
+                    errors:
+                      end_date:
+                        - The end date must be a date after or equal to start date.
+                formatoFecha:
+                  summary: Formato de fecha incorrecto
+                  value:
+                    message: Dato(s) invalido(s)
+                    errors:
+                      start_date:
+                        - The start date does not match the format Y-m-d.
+        "404":
+          description: Ruta incompleta, por ejemplo sin `endDate`. El cuerpo es HTML, no JSON.
+        "429":
+          description: Se superó el límite de consultas por minuto. El cuerpo no se ha observado.
+        "500":
+          description: Error del servidor. El cuerpo es HTML, no JSON.
+components:
+  headers:
+    RateLimitLimit:
+      description: Consultas permitidas por minuto.
+      schema:
+        type: integer
+      example: 60
+    RateLimitRemaining:
+      description: Consultas restantes en el minuto actual.
+      schema:
+        type: integer
+      example: 59
+  schemas:
+    AvailabilityResponse:
+      type: object
+      required:
+        - successful
+        - data
+      properties:
+        successful:
+          type: boolean
+          description: Estado de la consulta.
+        data:
+          description: Contenido de la respuesta. Nulo cuando no hay salidas.
+          oneOf:
+            - $ref: "#/components/schemas/AvailabilityData"
+            - type: "null"
+    AvailabilityData:
+      type: object
+      required:
+        - ship
+      properties:
+        ship:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ship"
+    Ship:
+      type: object
+      required:
+        - name
+        - type
+        - itinerary
+      properties:
+        name:
+          type: string
+          description: Nombre del barco. Puede diferir del listado del manual, por ejemplo `M/C Galaxy Sirius`.
+        type:
+          type: integer
+          description: "Tipo de tour: `1` crucero, `5` tour diario (Skape). El manual lo llama `ship_type_id`."
+        itinerary:
+          type: array
+          items:
+            $ref: "#/components/schemas/Itinerary"
+    Itinerary:
+      type: object
+      required:
+        - id
+        - name
+        - acronym
+        - date
+        - guide
+        - free
+        - hold
+        - single
+        - capacity
+        - price
+        - promo
+        - package
+        - cabin
+      properties:
+        id:
+          type: integer
+          description: Identificador del itinerario.
+        name:
+          type: string
+          description: Nombre del itinerario.
+        acronym:
+          type: string
+          description: Acrónimo del itinerario.
+        date:
+          $ref: "#/components/schemas/ItineraryDates"
+        island:
+          $ref: "#/components/schemas/ItineraryIslands"
+        guide:
+          $ref: "#/components/schemas/Guide"
+        free:
+          type: integer
+          minimum: 0
+          description: Espacios libres en la salida. Es el total disponible para vender.
+        hold:
+          type: integer
+          minimum: 0
+          description: Espacios bloqueados.
+        single:
+          type: integer
+          minimum: 0
+          description: |
+            Según el manual, singles disponibles. Significado por confirmar: puede ser mayor
+            que `free`, y puede ser `0` aunque alguna cabina ofrezca acomodación Single.
+        capacity:
+          type: integer
+          minimum: 0
+          description: Capacidad de la embarcación.
+        price:
+          type: number
+          description: Precio por persona en doble acomodación (general).
+        promo:
+          description: Promoción vigente. Nula cuando no existe.
+          oneOf:
+            - $ref: "#/components/schemas/Promo"
+            - type: "null"
+        package:
+          $ref: "#/components/schemas/PackagePrices"
+        cabin:
+          description: Cabinas ofrecidas. Nulo cuando no hay ninguna.
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/Cabin"
+        accom:
+          $ref: "#/components/schemas/GeneralAccommodation"
+        deck:
+          type: string
+          description: Solo tours diarios. Cubierta de los espacios generales.
+    ItineraryDates:
+      type: object
+      required:
+        - start
+        - end
+      properties:
+        start:
+          type: string
+          format: date
+          description: Fecha de inicio del itinerario.
+        end:
+          type: string
+          format: date
+          description: Fecha final del itinerario.
+    ItineraryIslands:
+      type: object
+      description: Solo cruceros. Lugares de inicio y fin, como códigos (`GPS`, `SCY`).
+      required:
+        - start
+        - end
+      properties:
+        start:
+          type: string
+          description: Lugar de inicio del itinerario.
+        end:
+          type: string
+          description: Lugar de fin del itinerario.
+    Guide:
+      type: object
+      required:
+        - language
+      properties:
+        language:
+          type: string
+          description: Idioma del guía, por ejemplo `en`.
+    Promo:
+      type: object
+      required:
+        - date
+        - amount
+        - observation
+      properties:
+        date:
+          type: string
+          format: date
+          description: Fecha de caducidad de la promoción.
+        amount:
+          type:
+            - number
+            - "null"
+          description: Precio promocional. Nulo cuando la promoción es solo un beneficio, sin rebaja.
+        observation:
+          type:
+            - string
+            - "null"
+          description: Promociones adicionales, por ejemplo `Free Air Ticket`.
+    PackagePrices:
+      type: object
+      description: Los valores pueden llegar como número o como texto, por ejemplo `1300.00`.
+      required:
+        - normal
+        - save
+        - promo
+      properties:
+        normal:
+          type:
+            - number
+            - string
+          pattern: ^\d+(\.\d+)?$
+          description: Precio normal comprando por separado.
+        save:
+          type:
+            - number
+            - string
+          pattern: ^\d+(\.\d+)?$
+          description: Precio agencia.
+        promo:
+          type:
+            - number
+            - string
+            - "null"
+          pattern: ^\d+(\.\d+)?$
+          description: Precio promocional. Nulo cuando no hay promoción.
+    Cabin:
+      type: object
+      required:
+        - id
+        - name
+        - deck
+        - accom
+      properties:
+        id:
+          type: integer
+          description: Identificador de la cabina.
+        name:
+          type: string
+          description: Nombre o número de la cabina.
+        deck:
+          type: string
+          description: Cubierta de la cabina.
+        accom:
+          type: array
+          description: Formas de vender la cabina. Son alternativas y no se suman entre sí.
+          items:
+            $ref: "#/components/schemas/Accommodation"
+        space:
+          type: array
+          description: Solo tours diarios. Espacios físicos de la cabina.
+          items:
+            $ref: "#/components/schemas/CabinSpace"
+    CabinSpace:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    Accommodation:
+      type: object
+      description: |
+        Acomodación de una cabina. En M/Y Galaxy Skape, las cabinas VIP (`1-VIP`), Matrimonial
+        (`2-MATRIMONIAL`) y Twin (`3-TWIN`) tienen costo adicional al itinerario.
+      required:
+        - id
+        - name
+        - share
+        - space
+        - price
+        - promo
+      properties:
+        id:
+          type: integer
+          description: Identificador de la acomodación.
+        name:
+          type: string
+          description: Nombre de la acomodación, por ejemplo `Double Twin`.
+        share:
+          type: boolean
+          description: "`true` pendiente a compartir, `false` cabina completa."
+        space:
+          type: integer
+          description: Capacidad de la acomodación.
+        price:
+          type: number
+          description: Precio de la acomodación.
+        promo:
+          type:
+            - number
+            - "null"
+          description: Precio promocional de la acomodación.
+        active:
+          type: integer
+          description: Solo tours diarios. Significado sin documentar en el manual.
+        delete:
+          type: integer
+          description: Solo tours diarios. Significado sin documentar en el manual.
+    GeneralAccommodation:
+      type: object
+      description: Solo tours diarios. Espacios generales, cuando no se agrega ninguna cabina.
+      required:
+        - id
+        - name
+        - space
+        - price
+        - promo
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        space:
+          type: integer
+        price:
+          type: number
+        promo:
+          type:
+            - number
+            - "null"
+    ValidationError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Mensaje general del error.
+        errors:
+          type: object
+          description: Mensajes por campo (`ship_id`, `start_date`, `end_date`). Puede no venir.
+          additionalProperties:
+            type: array
+            items:
+              type: string

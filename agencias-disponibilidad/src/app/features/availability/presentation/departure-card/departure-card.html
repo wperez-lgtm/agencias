@@ -1,0 +1,128 @@
+@let trip = itinerary();
+
+<article class="card">
+  <div class="when">
+    <span class="when__dow">{{ trip.date.start | date: 'EEE' }}</span>
+    <span class="when__day">{{ trip.date.start | date: 'd' }}</span>
+    <span class="when__month">{{ trip.date.start | date: 'MMM y' }}</span>
+  </div>
+
+  <div class="trip">
+    <div class="trip__heading">
+      <h3>{{ presentation().itineraryTitle(trip) }}</h3>
+      @if (trip.acronym !== trip.name) {
+        <span class="chip">{{ trip.acronym }}</span>
+      }
+      <span class="chip">Guía: {{ language() }}</span>
+      @if (trip.deck) {
+        <span class="chip">{{ trip.deck }}</span>
+      }
+    </div>
+
+    @if (trip.island; as island) {
+      <div class="route">
+        <div class="route__stop">
+          <strong>{{ islandName(island.start) }}</strong>
+          <small>{{ island.start }} · {{ trip.date.start | date: 'd MMM' }}</small>
+        </div>
+        <div class="route__line">
+          <span>{{ nights() + 1 }} días · {{ nights() }} {{ nights() | pluralize: 'noche' : 'noches' }}</span>
+        </div>
+        <div class="route__stop route__stop--end">
+          <strong>{{ islandName(island.end) }}</strong>
+          <small>{{ island.end }} · {{ trip.date.end | date: 'd MMM' }}</small>
+        </div>
+      </div>
+    }
+
+    <div class="seats">
+      <div class="seats__label">
+        <span class="seats__free" [class.seats__free--low]="lowStock()">
+          <strong>{{ trip.free }}</strong> de {{ trip.capacity }} libres
+        </span>
+        @if (lowStock()) {
+          <span class="seats__alert">Últimos espacios</span>
+        }
+      </div>
+      <div class="seats__bar" aria-hidden="true">
+        <span class="seats__fill" [class.seats__fill--low]="lowStock()" [style.width.%]="occupancy().freePercent"></span>
+        <span class="seats__hold" [style.width.%]="occupancy().holdPercent"></span>
+      </div>
+      <p class="seats__meta">
+        {{ trip.hold }} {{ trip.hold | pluralize: 'bloqueado' : 'bloqueados' }} · {{ trip.single }}
+        {{ trip.single | pluralize: 'single' : 'singles' }}
+      </p>
+    </div>
+  </div>
+
+  <div class="price">
+    @if (discount() > 0) {
+      <div class="price__was">
+        <s>{{ trip.price | price }}</s>
+        <span class="price__off">-{{ discount() }}%</span>
+      </div>
+    }
+    <strong class="price__now">{{ finalPrice() | price }}</strong>
+    @if (trip.promo; as promo) {
+      <small>Promo hasta el {{ promo.date | date: 'd MMM y' }}</small>
+      @if (promo.observation; as observation) {
+        <span class="price__gift">{{ observation }}</span>
+      }
+    }
+    <small>{{ presentation().priceNote }}</small>
+  </div>
+
+  <footer class="extras">
+    <dl class="package">
+      <div><dt>Paquete normal</dt><dd>{{ trip.package.normal | price }}</dd></div>
+      <div class="package__agency"><dt>Precio agencia</dt><dd>{{ trip.package.save | price }}</dd></div>
+      @if (trip.package.promo !== null) {
+        <div><dt>Paquete promo</dt><dd>{{ trip.package.promo | price }}</dd></div>
+      }
+    </dl>
+    @if (cabinCount() > 0) {
+      <button type="button" class="toggle" [attr.aria-expanded]="cabinsOpen()" (click)="toggleCabins()">
+        @if (cabinsOpen()) {
+          Ocultar cabinas
+        } @else {
+          Ver {{ cabinCount() }} {{ cabinCount() | pluralize: 'cabina' : 'cabinas' }}
+        }
+        <span class="toggle__icon" [class.toggle__icon--open]="cabinsOpen()" aria-hidden="true"></span>
+      </button>
+    }
+  </footer>
+
+  @if (cabinsOpen()) {
+    <div class="cabins">
+      @for (cabin of trip.cabin; track cabin.id) {
+        <section class="cabin">
+          <header>
+            <strong>Cabina {{ cabin.name }}</strong>
+            <span>{{ cabin.deck }}</span>
+          </header>
+          <ul>
+            @for (accom of cabin.accom; track accom.id) {
+              <li>
+                <span class="cabin__name">
+                  {{ accom.name }}
+                  <small>
+                    {{ accom.space }} {{ accom.space | pluralize: 'plaza' : 'plazas' }} ·
+                    {{ accom.share ? 'por compartir' : 'cabina completa' }}
+                  </small>
+                </span>
+                <span class="cabin__price">
+                  @if (accom.promo !== null) {
+                    <s>{{ accom.price | price }}</s>
+                    <strong>{{ accom.promo | price }}</strong>
+                  } @else {
+                    <strong>{{ accom.price | price }}</strong>
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  }
+</article>
