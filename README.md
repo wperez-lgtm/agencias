@@ -31,6 +31,7 @@ Este repositorio contiene **dos versiones de la misma aplicación** y la **docum
 15. [Solución de problemas](#15-solución-de-problemas)
 16. [Seguridad](#16-seguridad)
 17. [Pendientes por confirmar](#17-pendientes-por-confirmar)
+18. [Condiciones especiales](#18-condiciones-especiales)
 
 ---
 
@@ -162,6 +163,17 @@ Las dos muestran la misma información. Lo que cambia es cómo se construyen y s
 
 ## 4. API de disponibilidad
 
+### Ambientes
+
+| Ambiente | URL base | Uso |
+|---|---|---|
+| **Pruebas (actual)** | `https://disponibilidad.galapagosgalaxycruises.com` | Ambiente en uso mientras el portal se desarrolla y se prueba |
+| **Producción** | `https://galaxycruises.com` | Destino final, una vez terminadas las pruebas |
+
+> **Cuando el portal esté probado, debe apuntar a Producción.** Los pasos están en [Cambiar la URL de la API](#cambiar-la-url-de-la-api).
+
+> **Los dos ambientes no tienen los mismos datos.** El 10 de noviembre de 2026, 291 de 642 salidas comunes tenían distintos espacios libres.
+
 ### Endpoint
 
 ```
@@ -171,7 +183,13 @@ GET https://disponibilidad.galapagosgalaxycruises.com/api/v3/availability/search
 Ejemplo:
 
 ```bash
-curl https://disponibilidad.galapagosgalaxycruises.com/api/v3/availability/search/ship/4/2026-12-01/2026-12-31
+curl https://disponibilidad.galapagosgalaxycruises.com/api/v3/availability/search/ship/0/2027-02-14/2027-02-14
+```
+
+La misma consulta en Producción, para cuando terminen las pruebas:
+
+```bash
+curl https://galaxycruises.com/api/v3/availability/search/ship/0/2027-02-14/2027-02-14
 ```
 
 ### Características
@@ -184,8 +202,9 @@ curl https://disponibilidad.galapagosgalaxycruises.com/api/v3/availability/searc
 | Acceso desde navegador | Permitido desde cualquier dominio (CORS `*`) |
 | Límite | 60 consultas por minuto |
 | Encabezados del límite | `X-RateLimit-Limit` y `X-RateLimit-Remaining` |
+| Rangos amplios en producción | Consultar toda la flota durante 6 meses o un año devolvió `500` tras unos 30 segundos. Hasta 3 meses respondió `200`. Divide las búsquedas largas por mes |
 
-> **Usa solo este dominio.** El manual indica `galagentssystem.com`, que devolvió datos distintos: por ejemplo, Bonita itinerario B del 14 de noviembre figuraba con 2 espacios libres allí y con 0 en el dominio actual.
+> **No uses `galagentssystem.com`.** Es el dominio del manual anterior y devolvió datos distintos: por ejemplo, Bonita itinerario B del 14 de noviembre figuraba con 2 espacios libres allí y con 0 en el ambiente de pruebas.
 
 ### Parámetros
 
@@ -226,7 +245,7 @@ Los nombres de los ID 1, 6 y 10 vienen del manual, porque la API no los devolvi�
 | `401` | Parámetros inválidos. La API usa este código aunque no pida autenticación | JSON con `message` y, casi siempre, `errors` |
 | `404` | Ruta incompleta | HTML |
 | `429` | Límite superado | Sin observar todavía |
-| `500` | Error del servidor | HTML |
+| `500` | Error del servidor o rango demasiado amplio | HTML o JSON con `success: false` y `message` |
 
 ### Ejemplos de error `401`
 
@@ -322,7 +341,7 @@ Barco sin registro, sin el campo `errors`:
 | `guide.language` | Texto | No | Idioma del guía | "Guía: Inglés" |
 | `free` | Número | No | Espacios libres; total disponible para vender | "8 de 16 libres" |
 | `hold` | Número | No | Espacios bloqueados | Barra naranja y texto |
-| `single` | Número | No | Singles, significado por confirmar | Texto bajo la barra |
+| `single` | Número | No | Singles disponibles, ver [condiciones especiales](#18-condiciones-especiales) | Texto bajo la barra |
 | `capacity` | Número | No | Capacidad | "8 de 16 libres" |
 | `price` | Número | No | Precio por persona en doble acomodación | Precio principal o tachado |
 | `promo` | Objeto | Sí | Promoción | Precio y vigencia |
@@ -680,7 +699,7 @@ En Swagger se ve cada campo de la API y se puede ejecutar una consulta real desd
 3. Escribe `shipId`, `startDate` y `endDate`.
 4. Pulsa **Execute**.
 
-Las fechas de ejemplo son fijas. Si ya pasaron, cámbialas o la API responderá `401`. Cada **Execute** es una consulta real a producción y cuenta para el límite de 60 por minuto.
+Las fechas de ejemplo son fijas. Si ya pasaron, cámbialas o la API responderá `401`. En **Servers** elige Producción o Pruebas. Cada **Execute** es una consulta real a ese ambiente y cuenta para el límite de 60 por minuto.
 
 ### Validar la especificación
 
@@ -757,6 +776,8 @@ Las tres partes son estáticas. Basta un servidor web como Nginx, Apache, IIS o 
 
 ### Cambiar la URL de la API
 
+Hoy el portal usa la URL de Pruebas. Cuando esté probado, cámbiala en estos archivos por la de Producción: `https://galaxycruises.com/api/v3/availability/search/ship`.
+
 | Parte | Archivo |
 |---|---|
 | Angular | `src/environments/environment.ts` y `src/environments/environment.development.ts` |
@@ -795,7 +816,8 @@ Las rutas son relativas a `features/availability/`, dentro de `src/app/` en Angu
 | "Se alcanzó el límite de consultas" | Más de 60 consultas por minuto | Espera un minuto |
 | `Cannot GET` | Archivo fuera de la carpeta que publica el servidor | Comprueba la dirección y el puerto de la [sección 1](#1-inicio-rápido) |
 | Página en blanco en jQuery | Módulos bloqueados o `.js` mal servido | Abre la consola del navegador y revisa el tipo de archivo |
-| Datos distintos al manual | El manual usa otro dominio | Usa solo `disponibilidad.galapagosgalaxycruises.com` |
+| Datos distintos entre consultas | Se comparó Producción con Pruebas, o se usó el dominio antiguo | Compara siempre dentro del mismo ambiente. Durante el desarrollo usa Pruebas |
+| Error `500` en una búsqueda larga | El rango es demasiado amplio para Producción | Divide la búsqueda por mes |
 
 ---
 
@@ -810,14 +832,14 @@ Las rutas son relativas a `features/availability/`, dentro de `src/app/` en Angu
 
 ## 17. Pendientes por confirmar
 
-Las cifras se midieron en noviembre de 2026.
+Las cifras se midieron en noviembre de 2026 en el ambiente de pruebas.
 
 ### Con reservas
 
 | Tema | Observación | Decisión necesaria |
 |---|---|---|
 | Cabinas de Skape | El portal las lista sin indicar que tienen costo adicional | ¿Se aclara en el portal? |
-| Campo `single` | 7 salidas con `single` mayor que `free`, y puede ser 0 aunque se ofrezca Single | ¿Qué significa exactamente? |
+| Campo `single` | Definido como singles disponibles, pero llega en 0 en los barcos totalmente libres y en algunas salidas supera a `free` | Con el barco parcialmente vendido, ¿son los disponibles o los ya vendidos? |
 | Cabinas y espacios | En 224 de 308 cruceros las plazas de las cabinas suman más que `free` | ¿Se añade el aviso "máximo N espacios en total"? |
 | Moneda | La API no la indica | ¿Son dólares? |
 | `GPS` | Se muestra como Baltra por interpretación propia | ¿Es correcto? |
@@ -827,7 +849,8 @@ Las cifras se midieron en noviembre de 2026.
 
 | Tema | Acción |
 |---|---|
-| Dominio del manual | Corregir la URL o retirar el dominio antiguo |
+| Dominio antiguo del manual | Retirar `galagentssystem.com` |
+| Rangos amplios en Producción | Confirmar el rango máximo admitido, porque 6 meses devolvió `500` |
 | Respuesta `429` | Confirmar el formato de su contenido |
 | Campos `active` y `delete` | Documentar su significado |
 
@@ -836,3 +859,16 @@ Las cifras se midieron en noviembre de 2026.
 | Tema | Detalle |
 |---|---|
 | Búsquedas después de las 19:00 de Ecuador | Si el servidor trabaja en UTC, ya sería el día siguiente y la API podría rechazar la fecha de "hoy" |
+
+---
+
+## 18. Condiciones especiales
+
+| Condición | Regla |
+|---|---|
+| Singles | `single` es el número de singles disponibles. Cuando la embarcación está completamente libre (`free` igual a `capacity`), solo se permiten 2 singles por itinerario. En ese caso la API envía `single` en 0, lo que no significa que no haya singles |
+| M/Y Galaxy Skape | Las cabinas son adicionales al costo del itinerario. Hay 3: VIP (Cabina 1), Matrimonial (Cabina 2) y Twin (Cabina 3), con capacidad máxima de 2 personas. Si no se agrega ninguna cabina, aplican los espacios generales |
+| Total de espacios | No se puede vender más que `free`, aunque las plazas de las cabinas ofrecidas sumen más |
+| Vigencia de promociones | La promoción caduca en la fecha de `promo.date` |
+
+Fuente: manual de la API en `Recursos/`, salvo el tope de 2 singles y el total de espacios, indicados por el equipo de Galaxy. Estas condiciones todavía no se muestran en el portal.

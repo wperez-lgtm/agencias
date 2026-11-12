@@ -1,6 +1,6 @@
 # Manual de implementación — Portal de disponibilidad Galaxy Cruises
 
-Actualizado el 9 de noviembre de 2026.
+Actualizado el 10 de noviembre de 2026.
 
 ## Qué vas a implementar
 
@@ -19,7 +19,22 @@ GET https://disponibilidad.galapagosgalaxycruises.com/api/v3/availability/search
 | Límite | 60 consultas por minuto |
 | Encabezados del límite | `X-RateLimit-Limit` y `X-RateLimit-Remaining` |
 
-Usa únicamente el dominio `disponibilidad.galapagosgalaxycruises.com`. El dominio `galagentssystem.com`, que aparece en el manual anterior de la API, devolvió datos distintos.
+El servicio tiene dos ambientes, con datos distintos entre sí. Los ejemplos de este manual usan Pruebas.
+
+| Ambiente | URL base | Cuándo usarlo |
+| --- | --- | --- |
+| **Pruebas** | `https://disponibilidad.galapagosgalaxycruises.com` | Mientras desarrollas y pruebas tu integración |
+| **Producción** | `https://galaxycruises.com` | Cuando tu integración ya esté probada |
+
+**Cuando termines de probar, apunta tu sistema a Producción.** Solo cambia la URL base, la ruta es la misma:
+
+```
+GET https://galaxycruises.com/api/v3/availability/search/ship/{shipId}/{startDate}/{endDate}
+```
+
+No uses `galagentssystem.com`: es el dominio del manual anterior y devolvió datos distintos.
+
+En Producción, consulta rangos de hasta 3 meses. Pedir toda la flota durante 6 meses o un año devolvió `500` tras unos 30 segundos. Para periodos largos, haz una consulta por mes.
 
 ## Paso 1. Probar el endpoint
 
@@ -80,7 +95,7 @@ El código de estado no basta para interpretar la respuesta. Dos casos sorprende
 | `401` | Barco o fechas inválidos | JSON con `message` y, casi siempre, `errors` | Mostrar `errors`, o `message` si no viene. No agregar credenciales |
 | `404` | Ruta incompleta | HTML | Corregir la URL. No leerlo como JSON |
 | `429` | Más de 60 consultas por minuto | Aún sin observar | Esperar un minuto. No leerlo como JSON |
-| `500` | Error del servidor | HTML | Mostrar un error general. No leerlo como JSON |
+| `500` | Error del servidor o rango demasiado amplio | HTML o JSON con `success: false` y `message` | Mostrar un error general. Comprobar el `content-type` antes de leerlo. Si el rango es largo, dividirlo por mes |
 
 Si llamas desde un servidor, envía un `User-Agent` propio. El servicio responde `406` a los clientes `Python-urllib` y `python-requests` con su valor por defecto. Con un valor como `agencia-disponibilidad/1.0` responde `200`.
 
@@ -218,7 +233,7 @@ Campos de cada barco y salida:
 | `guide.language` | Texto | No | Idioma del guía, por ejemplo `en` |
 | `free` | Número | No | Espacios libres, total disponible para vender |
 | `hold` | Número | No | Espacios bloqueados |
-| `single` | Número | No | Singles. Significado por confirmar |
+| `single` | Número | No | Singles disponibles. Ver condiciones especiales |
 | `capacity` | Número | No | Capacidad de la embarcación |
 | `price` | Número | No | Precio por persona en doble acomodación |
 | `promo` | Objeto | Sí | `date` caducidad, `amount` precio promocional, `observation` beneficio |
@@ -431,9 +446,19 @@ def fetch_availability(ship_id, start_date, end_date):
     return (body.get("data") or {}).get("ship", [])
 ```
 
+## Condiciones especiales
+
+| Condición | Regla |
+| --- | --- |
+| Singles | `single` es el número de singles disponibles. Cuando la embarcación está completamente libre (`free` igual a `capacity`), solo se permiten 2 singles por itinerario. En ese caso la API envía `single` en 0, lo que no significa que no haya singles |
+| M/Y Galaxy Skape | Las cabinas son adicionales al costo del itinerario. Hay 3: VIP (Cabina 1), Matrimonial (Cabina 2) y Twin (Cabina 3), con capacidad máxima de 2 personas. Si no se agrega ninguna cabina, aplican los espacios generales |
+| Total de espacios | No vendas más que `free`, aunque las plazas de las cabinas ofrecidas sumen más |
+| Vigencia de promociones | La promoción caduca en la fecha de `promo.date` |
+
 ## Lista de comprobación antes de publicar
 
-- [ ] La URL usa `disponibilidad.galapagosgalaxycruises.com`.
+- [ ] Las pruebas se hicieron contra `disponibilidad.galapagosgalaxycruises.com`.
+- [ ] Terminadas las pruebas, la URL se cambió a Producción: `galaxycruises.com`.
 - [ ] Una búsqueda sin salidas muestra un mensaje, no un error.
 - [ ] Una fecha pasada muestra el mensaje del servicio.
 - [ ] Un `404`, `429` o `500` no rompe la página.
@@ -455,13 +480,14 @@ def fetch_availability(ship_id, start_date, end_date):
 | Error con `data.ship` | `data` llegó nulo | Usar lista vacía cuando `data` sea nulo |
 | Fecha un día antes | La fecha se interpretó en UTC | Construirla con año, mes y día locales |
 | `429` | Más de 60 consultas por minuto | Esperar un minuto y reducir las consultas |
-| Datos distintos a otra fuente | Se usó el dominio anterior | Usar solo el dominio de este manual |
+| Datos distintos a otra fuente | Se compararon ambientes distintos o se usó el dominio anterior | Comparar dentro del mismo ambiente. Durante el desarrollo, usar Pruebas |
+| `500` en una búsqueda larga | Rango demasiado amplio para Producción | Dividir la búsqueda por mes |
 
 ## Pendiente de confirmar
 
 Estos puntos dependen de Galaxy y pueden cambiar cómo presentas los datos.
 
 - La moneda: el servicio no la indica.
-- El significado exacto de `single`: puede ser mayor que `free`.
+- El valor de `single` con el barco parcialmente vendido: puede ser mayor que `free`.
 - El contenido de la respuesta `429`: no se ha observado.
 - Las consultas después de las 19:00 de Ecuador: sin probar si la fecha de hoy se rechaza.
